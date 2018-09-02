@@ -94,46 +94,21 @@ EXPORT __GLXextFuncPtr glXGetProcAddressARB(const GLubyte *f)
   return glXGetProcAddress(f);
 }
 
-void *dlopenThis, *dlopenGL;
-
-__attribute__((visibility("default"))) void *dlopen(const char *filename, int flag)
-{
-  //printf("dlopen: %s\n", filename); fflush(stdout);
-
-  typedef void *(*DLOPENPROC)(const char *, int);
-  static DLOPENPROC realdlopen;
-  if(!realdlopen)
-    realdlopen = (DLOPENPROC)dlsym(RTLD_NEXT, "dlopen");
-
-  void *ret = realdlopen(filename, flag);
-
-  if(!dlopenThis &&
-     filename && strstr(filename, "libGL.so"))
-  {
-    dlopenGL = ret;
-    dlopenThis = ret = realdlopen("libglhook.so", flag);
-  }
-
-  return ret;
-}
-
 void* _dl_sym(void *, const char *, void *);
 EXPORT void *dlsym(void *__restrict handle, const char *__restrict name)
 {
     //printf("dlsym: %s\n", name); fflush(stdout);
 
+    static void* (*real_dlsym)(void *, const char *);
+    if(!real_dlsym)
+        real_dlsym = (decltype(real_dlsym))_dl_sym(RTLD_NEXT, "dlsym", (void*)dlsym);
+
     if(!strcmp(name, "glXGetProcAddressARB"))
         return (void*)glXGetProcAddress;
     if(!strcmp(name, "dlsym"))
         return (void*)dlsym;
-    if(!strcmp(name, "glcuR0d4nX")) // NVidia's libGL.so.1 looks this up, but not used.
-        return (void*)0xf00;
 
-    if(handle == dlopenThis)
-        handle = dlopenGL;
-
-    void* ret = _dl_sym(handle, name, (void*)dlsym);
-    return ret;
+    return real_dlsym(handle, name);
 }
 
 } // extern "C"

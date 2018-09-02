@@ -10,8 +10,8 @@
 
 #include "darknet/src/box.h"
 
-#define DETECT_WIDTH 416  // From Darknet
-#define DETECT_HEIGHT 416
+#define DETECT_WIDTH 608  // From Darknet
+#define DETECT_HEIGHT 608
 #define DETECT_CHANNELS 3
 #define DETECT_BYTES (DETECT_WIDTH * DETECT_HEIGHT * DETECT_CHANNELS)
 
